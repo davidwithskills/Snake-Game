@@ -1,8 +1,6 @@
 import pygame
-import time
 import random
 
-# Initialize pygame
 pygame.init()
 
 # Colors
@@ -11,7 +9,18 @@ yellow = (255, 255, 102)
 black = (0, 0, 0)
 red = (213, 50, 80)
 green = (0, 255, 0)
-blue = (50, 153, 213)
+blue = (30, 120, 60)
+grid_color = (40, 130, 180)
+
+# Layout
+TOP_BAR_HEIGHT = 60
+UI_MARGIN = 10
+UI_BG = (34, 139, 34)  # top bar background
+PLAY_BG = (187, 240, 148)  # play area background
+PLAY_BORDER_COLOR = (34, 139, 34)
+GRID_SHADE_A = (180, 230, 140)
+GRID_SHADE_B = (165, 215, 120)
+BORDER_THICKNESS = 6
 
 # Screen size
 width = 600
@@ -21,98 +30,152 @@ pygame.display.set_caption('Snake Game')
 
 clock = pygame.time.Clock()
 snake_block = 10
-snake_speed = 15
+base_speed = 10
 
 font = pygame.font.SysFont("bahnschrift", 25)
 
-def gradient_color(index, total, start=None, end=None):
-    # use configured defaults if not provided
-    if start is None:
-        start = SNAKE_GRADIENT_START
-    if end is None:
-        end = SNAKE_GRADIENT_END
-    if total <= 1:
-        return end
-    t = index / float(total - 1)
-    r = int(start[0] + (end[0] - start[0]) * t)
-    g = int(start[1] + (end[1] - start[1]) * t)
-    b = int(start[2] + (end[2] - start[2]) * t)
-    return (r, g, b)
-
-# Configurable appearance
+# Gradient settings
 SNAKE_GRADIENT_START = (0, 100, 0)
 SNAKE_GRADIENT_END = (0, 255, 0)
-# head border radius is snake_block // HEAD_BORDER_RADIUS_FACTOR
 HEAD_BORDER_RADIUS_FACTOR = 3
 
-def our_snake(snake_block, snake_list, direction):
-    if not snake_list:
-        return
-    # draw body with gradient
+# Highscore storage
+HIGHSCORE_FILE = "highscore.txt"
+
+def load_highscore():
+    try:
+        with open(HIGHSCORE_FILE, "r") as f:
+            return int(f.read().strip())
+    except Exception:
+        return 0
+
+def save_highscore(score):
+    try:
+        with open(HIGHSCORE_FILE, "w") as f:
+            f.write(str(int(score)))
+    except Exception:
+        pass
+
+
+def gradient_color(index, total):
+    if total <= 1:
+        return SNAKE_GRADIENT_END
+    t = index / (total - 1)
+    r = int(SNAKE_GRADIENT_START[0] + (SNAKE_GRADIENT_END[0] - SNAKE_GRADIENT_START[0]) * t)
+    g = int(SNAKE_GRADIENT_START[1] + (SNAKE_GRADIENT_END[1] - SNAKE_GRADIENT_START[1]) * t)
+    b = int(SNAKE_GRADIENT_START[2] + (SNAKE_GRADIENT_END[2] - SNAKE_GRADIENT_START[2]) * t)
+    return (r, g, b)
+
+
+def draw_grid(play_x, play_y, play_w, play_h):
+    # draw a checkerboard of two green shades
+    cols = play_w // snake_block
+    rows = play_h // snake_block
+    for row in range(rows):
+        for col in range(cols):
+            x = play_x + col * snake_block
+            y = play_y + row * snake_block
+            color = GRID_SHADE_A if (row + col) % 2 == 0 else GRID_SHADE_B
+            pygame.draw.rect(screen, color, (x, y, snake_block, snake_block))
+
+
+def our_snake(snake_list, direction):
     total = len(snake_list)
-    for i, x in enumerate(snake_list[:-1]):
+
+    # Body (gradient)
+    for i, block in enumerate(snake_list[:-1]):
         color = gradient_color(i, total)
-        pygame.draw.rect(screen, color, [int(x[0]), int(x[1]), snake_block, snake_block])
-    # draw head (brighter)
+        pygame.draw.rect(screen, color, (*block, snake_block, snake_block), border_radius=4)
+
+    # Head
     head = snake_list[-1]
-    hx = int(head[0])
-    hy = int(head[1])
-    border_radius = max(1, snake_block // HEAD_BORDER_RADIUS_FACTOR)
-    pygame.draw.rect(screen, (0,255,0), [hx, hy, snake_block, snake_block], border_radius=border_radius)
+    hx, hy = head
+    radius = max(1, snake_block // HEAD_BORDER_RADIUS_FACTOR)
+    pygame.draw.rect(screen, green, (hx, hy, snake_block, snake_block), border_radius=radius)
 
-    # draw eyes based on direction (centered proportions)
-    eye_radius = max(1, snake_block // 4)
-    offset_small = snake_block // 4
-    offset_large = (3 * snake_block) // 4
-    eyes = []
+    # Eyes
+    eye_r = max(1, snake_block // 4)
+    s = snake_block // 4
+    l = (3 * snake_block) // 4
+
     if direction == "UP":
-        eyes = [(hx + offset_small, hy + offset_small), (hx + offset_large, hy + offset_small)]
+        eyes = [(hx + s, hy + s), (hx + l, hy + s)]
     elif direction == "DOWN":
-        eyes = [(hx + offset_small, hy + offset_large), (hx + offset_large, hy + offset_large)]
+        eyes = [(hx + s, hy + l), (hx + l, hy + l)]
     elif direction == "LEFT":
-        eyes = [(hx + offset_small, hy + offset_small), (hx + offset_small, hy + offset_large)]
-    elif direction == "RIGHT":
-        eyes = [(hx + offset_large, hy + offset_small), (hx + offset_large, hy + offset_large)]
+        eyes = [(hx + s, hy + s), (hx + s, hy + l)]
+    else:  # RIGHT
+        eyes = [(hx + l, hy + s), (hx + l, hy + l)]
 
-    for eye in eyes:
-        pygame.draw.circle(screen, (0,0,0), eye, eye_radius)
+    for e in eyes:
+        pygame.draw.circle(screen, black, e, eye_r)
 
-def Your_score(score):
+
+def show_score(score, highscore):
+    # draw inside top UI bar, left-aligned
+    top_y = (TOP_BAR_HEIGHT - font.get_height()) // 2
+    hs = font.render(f"Highscore: {highscore}", True, yellow)
     value = font.render(f"Score: {score}", True, yellow)
-    screen.blit(value, [0, 0])
+    screen.blit(hs, (UI_MARGIN, top_y))
+    screen.blit(value, (UI_MARGIN + 160, top_y))
+
 
 def gameLoop():
     game_over = False
     game_close = False
 
-    x1 = width // 2
-    y1 = height // 2
+    # Play area coordinates and size
+    play_x = UI_MARGIN
+    play_y = TOP_BAR_HEIGHT + UI_MARGIN
+    play_w = width - 2 * UI_MARGIN
+    play_h = height - TOP_BAR_HEIGHT - 2 * UI_MARGIN
 
-    x1_change = 0
-    y1_change = 0
+    # compute inner playable area (inside the drawn border)
+    play_inner_x = play_x + BORDER_THICKNESS
+    play_inner_y = play_y + BORDER_THICKNESS
+    play_inner_w = play_w - 2 * BORDER_THICKNESS
+    play_inner_h = play_h - 2 * BORDER_THICKNESS
+
+    # start centered in inner play area and aligned to grid
+    center_x = play_inner_x + play_inner_w // 2
+    center_y = play_inner_y + play_inner_h // 2
+    x = center_x - ((center_x - play_inner_x) % snake_block)
+    y = center_y - ((center_y - play_inner_y) % snake_block)
+    dx = dy = 0
     direction = "RIGHT"
 
-    snake_List = []
-    Length_of_snake = 1
+    snake = []
+    length = 1
+    highscore = load_highscore()
 
-    foodx = random.randrange(0, width - snake_block, snake_block)
-    foody = random.randrange(0, height - snake_block, snake_block)
+    # initial food spawn inside inner playable area (aligned to grid)
+    foodx = random.randrange(play_inner_x, play_inner_x + play_inner_w - snake_block, snake_block)
+    foody = random.randrange(play_inner_y, play_inner_y + play_inner_h - snake_block, snake_block)
 
     while not game_over:
 
         while game_close:
             screen.fill(blue)
-            message = font.render("Game Over! Press C-Play Again or Q-Quit", True, red)
-            screen.blit(message, [width / 9, height / 3])
-            Your_score(Length_of_snake - 1)
+            msg = font.render("Game Over! Press C-Play Again or Q-Quit", True, red)
+            screen.blit(msg, (width // 9, height // 3))
+            show_score(length - 1, highscore)
             pygame.display.update()
 
             for event in pygame.event.get():
                 if event.type == pygame.KEYDOWN:
                     if event.key == pygame.K_q:
+                        # save highscore if beaten
+                        current_score = length - 1
+                        if current_score > highscore:
+                            save_highscore(current_score)
+                            highscore = current_score
                         game_over = True
                         game_close = False
                     if event.key == pygame.K_c:
+                        # save highscore if beaten then restart
+                        current_score = length - 1
+                        if current_score > highscore:
+                            save_highscore(current_score)
                         gameLoop()
 
         for event in pygame.event.get():
@@ -120,53 +183,63 @@ def gameLoop():
                 game_over = True
             elif event.type == pygame.KEYDOWN:
                 if event.key == pygame.K_LEFT:
-                    x1_change = -snake_block
-                    y1_change = 0
+                    dx, dy = -snake_block, 0
                     direction = "LEFT"
                 elif event.key == pygame.K_RIGHT:
-                    x1_change = snake_block
-                    y1_change = 0
+                    dx, dy = snake_block, 0
                     direction = "RIGHT"
                 elif event.key == pygame.K_UP:
-                    y1_change = -snake_block
-                    x1_change = 0
+                    dx, dy = 0, -snake_block
                     direction = "UP"
                 elif event.key == pygame.K_DOWN:
-                    y1_change = snake_block
-                    x1_change = 0
+                    dx, dy = 0, snake_block
                     direction = "DOWN"
 
-        if x1 >= width or x1 < 0 or y1 >= height or y1 < 0:
+        if x < play_inner_x or x >= play_inner_x + play_inner_w or y < play_inner_y or y >= play_inner_y + play_inner_h:
             game_close = True
 
-        x1 += x1_change
-        y1 += y1_change
-        screen.fill(blue)
-        pygame.draw.rect(screen, red, [foodx, foody, snake_block, snake_block])
-        snake_Head = []
-        snake_Head.append(int(x1))
-        snake_Head.append(int(y1))
-        snake_List.append(snake_Head)
-        if len(snake_List) > Length_of_snake:
-            del snake_List[0]
+        x += dx
+        y += dy
 
-        for x in snake_List[:-1]:
-            if x == snake_Head:
+        # Background: top bar + play area
+        screen.fill(blue)
+        # top UI bar
+        pygame.draw.rect(screen, UI_BG, (0, 0, width, TOP_BAR_HEIGHT))
+        # play area background (full area behind the border)
+        pygame.draw.rect(screen, PLAY_BG, (play_x, play_y, play_w, play_h))
+        # draw checkerboard grid inside inner playable area
+        draw_grid(play_inner_x, play_inner_y, play_inner_w, play_inner_h)
+        # play area border on top of grid
+        pygame.draw.rect(screen, PLAY_BORDER_COLOR, (play_x, play_y, play_w, play_h), BORDER_THICKNESS)
+
+        # Food (circle + outline) - coordinates are top-left of block
+        pygame.draw.circle(screen, red, (foodx + snake_block // 2, foody + snake_block // 2), snake_block // 2)
+        pygame.draw.circle(screen, white, (foodx + snake_block // 2, foody + snake_block // 2), snake_block // 2, 1)
+
+        snake.append([x, y])
+        if len(snake) > length:
+            del snake[0]
+
+        for block in snake[:-1]:
+            if block == [x, y]:
                 game_close = True
 
-        our_snake(snake_block, snake_List, direction)
-        Your_score(Length_of_snake - 1)
+        our_snake(snake, direction)
+        show_score(length - 1, highscore)
 
         pygame.display.update()
 
-        if int(x1) == foodx and int(y1) == foody:
-            foodx = random.randrange(0, width - snake_block, snake_block)
-            foody = random.randrange(0, height - snake_block, snake_block)
-            Length_of_snake += 1
+        if x == foodx and y == foody:
+            foodx = random.randrange(play_inner_x, play_inner_x + play_inner_w - snake_block, snake_block)
+            foody = random.randrange(play_inner_y, play_inner_y + play_inner_h - snake_block, snake_block)
+            length += 1
 
-        clock.tick(snake_speed)
+        # Speed increases with score
+        speed = base_speed + (length // 5)
+        clock.tick(speed)
 
     pygame.quit()
     quit()
+
 
 gameLoop()
