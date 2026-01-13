@@ -2,6 +2,15 @@ import pygame
 import random
 
 pygame.init()
+pygame.mixer.init()
+eat_sound = pygame.mixer.Sound("eat.wav")
+gameover_sound = pygame.mixer.Sound("gameover.wav")
+
+# Optional: volume control (0.0 to 1.0)
+eat_sound.set_volume(0.6)
+gameover_sound.set_volume(0.8)
+
+
 
 # Colors
 white = (255, 255, 255)
@@ -20,7 +29,7 @@ PLAY_BG = (187, 240, 148)  # play area background
 PLAY_BORDER_COLOR = (34, 139, 34)
 GRID_SHADE_A = (180, 230, 140)
 GRID_SHADE_B = (165, 215, 120)
-BORDER_THICKNESS = 6
+BORDER_THICKNESS = 5
 
 # Screen size
 width = 600
@@ -30,7 +39,7 @@ pygame.display.set_caption('Snake Game')
 
 clock = pygame.time.Clock()
 snake_block = 10
-base_speed = 10
+base_speed = 15
 
 font = pygame.font.SysFont("bahnschrift", 25)
 
@@ -131,10 +140,18 @@ def gameLoop():
     play_h = height - TOP_BAR_HEIGHT - 2 * UI_MARGIN
 
     # compute inner playable area (inside the drawn border)
-    play_inner_x = play_x + BORDER_THICKNESS
-    play_inner_y = play_y + BORDER_THICKNESS
-    play_inner_w = play_w - 2 * BORDER_THICKNESS
-    play_inner_h = play_h - 2 * BORDER_THICKNESS
+    available_w = play_w - 2 * BORDER_THICKNESS
+    available_h = play_h - 2 * BORDER_THICKNESS
+
+    # make inner play size a multiple of snake_block so positions align to grid
+    cols = available_w // snake_block
+    rows = available_h // snake_block
+    play_inner_w = cols * snake_block
+    play_inner_h = rows * snake_block
+
+    # center the inner play area within the border thickness
+    play_inner_x = play_x + BORDER_THICKNESS + (available_w - play_inner_w) // 2
+    play_inner_y = play_y + BORDER_THICKNESS + (available_h - play_inner_h) // 2
 
     # start centered in inner play area and aligned to grid
     center_x = play_inner_x + play_inner_w // 2
@@ -195,7 +212,13 @@ def gameLoop():
                     dx, dy = 0, snake_block
                     direction = "DOWN"
 
-        if x < play_inner_x or x >= play_inner_x + play_inner_w or y < play_inner_y or y >= play_inner_y + play_inner_h:
+        # collision when the snake's block would go outside the inner play area
+        min_x = play_inner_x
+        min_y = play_inner_y
+        max_x = play_inner_x + play_inner_w - snake_block
+        max_y = play_inner_y + play_inner_h - snake_block
+        if x < min_x or x > max_x or y < min_y or y > max_y:
+            gameover_sound.play()
             game_close = True
 
         x += dx
@@ -222,6 +245,7 @@ def gameLoop():
 
         for block in snake[:-1]:
             if block == [x, y]:
+                gameover_sound.play()
                 game_close = True
 
         our_snake(snake, direction)
@@ -230,16 +254,29 @@ def gameLoop():
         pygame.display.update()
 
         if x == foodx and y == foody:
-            foodx = random.randrange(play_inner_x, play_inner_x + play_inner_w - snake_block, snake_block)
-            foody = random.randrange(play_inner_y, play_inner_y + play_inner_h - snake_block, snake_block)
+            eat_sound.play()
+            foodx, foody = generate_food(snake, play_inner_x, play_inner_y, play_inner_w, play_inner_h)
             length += 1
 
         # Speed increases with score
-        speed = base_speed + (length // 5)
+        speed = base_speed + (length // 1)
         clock.tick(speed)
 
     pygame.quit()
     quit()
 
+def generate_food(snake, play_inner_x, play_inner_y, play_inner_w, play_inner_h):
+    free_cells = []
+
+    for x in range(play_inner_x,
+                   play_inner_x + play_inner_w - snake_block,
+                   snake_block):
+        for y in range(play_inner_y,
+                       play_inner_y + play_inner_h - snake_block,
+                       snake_block):
+            if [x, y] not in snake:
+                free_cells.append((x, y))
+
+    return random.choice(free_cells)
 
 gameLoop()
