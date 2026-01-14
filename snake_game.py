@@ -213,10 +213,10 @@ def gameLoop():
                     direction = "DOWN"
 
         # collision when the snake's block would go outside the inner play area
-        min_x = play_inner_x
-        min_y = play_inner_y
-        max_x = play_inner_x + play_inner_w - snake_block
-        max_y = play_inner_y + play_inner_h - snake_block
+        min_x = play_x + BORDER_THICKNESS
+        min_y = play_y + BORDER_THICKNESS
+        max_x = play_x + play_w - BORDER_THICKNESS - snake_block
+        max_y = play_y + play_h - BORDER_THICKNESS - snake_block
         if x < min_x or x > max_x or y < min_y or y > max_y:
             gameover_sound.play()
             game_close = True
