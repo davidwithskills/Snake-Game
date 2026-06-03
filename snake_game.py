@@ -23,12 +23,18 @@ gameover_sound.set_volume(0.8)
 
 # Colors
 white = (255, 255, 255)
-yellow = (255, 255, 102)
-black = (0, 0, 0)
-red = (213, 50, 80)
-green = (0, 255, 0)
-blue = (30, 120, 60)
-grid_color = (40, 130, 180)
+yellow = (211, 255, 236)
+black = (10, 12, 22)
+red = (246, 112, 127)
+ACCENT = (108, 255, 194)
+ACCENT_2 = (34, 168, 255)
+BG_START = (6, 11, 24)
+BG_END = (28, 58, 85)
+UI_BG = (255, 255, 255, 28)
+PLAY_BG = (255, 255, 255, 18)
+PLAY_BORDER_COLOR = (108, 255, 194)
+GRID_SHADE_A = (13, 31, 61)
+GRID_SHADE_B = (8, 22, 42)
 
 # Layout
 TOP_BAR_HEIGHT = 60
@@ -53,8 +59,8 @@ base_speed = 15
 font = pygame.font.SysFont("bahnschrift", 25)
 
 # Gradient settings
-SNAKE_GRADIENT_START = (0, 100, 0)
-SNAKE_GRADIENT_END = (0, 255, 0)
+SNAKE_GRADIENT_START = ACCENT
+SNAKE_GRADIENT_END = ACCENT_2
 HEAD_BORDER_RADIUS_FACTOR = 3
 
 # Highscore storage
@@ -86,7 +92,7 @@ def gradient_color(index, total):
 
 
 def draw_grid(play_x, play_y, play_w, play_h):
-    # draw a checkerboard of two green shades
+    # draw a subtle checkerboard background for the play area
     cols = play_w // snake_block
     rows = play_h // snake_block
     for row in range(rows):
@@ -95,6 +101,20 @@ def draw_grid(play_x, play_y, play_w, play_h):
             y = play_y + row * snake_block
             color = GRID_SHADE_A if (row + col) % 2 == 0 else GRID_SHADE_B
             pygame.draw.rect(screen, color, (x, y, snake_block, snake_block))
+
+
+def draw_background():
+    for y in range(height):
+        t = y / max(1, height - 1)
+        r = int(BG_START[0] + (BG_END[0] - BG_START[0]) * t)
+        g = int(BG_START[1] + (BG_END[1] - BG_START[1]) * t)
+        b = int(BG_START[2] + (BG_END[2] - BG_START[2]) * t)
+        pygame.draw.line(screen, (r, g, b), (0, y), (width, y))
+
+    glow = pygame.Surface((width, height), pygame.SRCALPHA)
+    pygame.draw.circle(glow, (108, 255, 194, 40), (int(width * 0.2), int(height * 0.2)), 160)
+    pygame.draw.circle(glow, (34, 168, 255, 32), (int(width * 0.85), int(height * 0.78)), 180)
+    screen.blit(glow, (0, 0))
 
 
 def our_snake(snake_list, direction):
@@ -109,7 +129,7 @@ def our_snake(snake_list, direction):
     head = snake_list[-1]
     hx, hy = head
     radius = max(1, snake_block // HEAD_BORDER_RADIUS_FACTOR)
-    pygame.draw.rect(screen, green, (hx, hy, snake_block, snake_block), border_radius=radius)
+    pygame.draw.rect(screen, ACCENT, (hx, hy, snake_block, snake_block), border_radius=radius)
 
     # Eyes
     eye_r = max(1, snake_block // 4)
@@ -181,7 +201,7 @@ def gameLoop():
     while not game_over:
 
         while game_close:
-            screen.fill(blue)
+            draw_background()
             msg = font.render("Game Over! Press C-Play Again or Q-Quit", True, red)
             screen.blit(msg, (width // 9, height // 3))
             show_score(length - 1, highscore)
@@ -233,15 +253,20 @@ def gameLoop():
         x += dx
         y += dy
 
-        # Background: top bar + play area
-        screen.fill(blue)
-        # top UI bar
-        pygame.draw.rect(screen, UI_BG, (0, 0, width, TOP_BAR_HEIGHT))
-        # play area background (full area behind the border)
-        pygame.draw.rect(screen, PLAY_BG, (play_x, play_y, play_w, play_h))
-        # draw checkerboard grid inside inner playable area
+        # Background and glowing effect
+        draw_background()
+
+        ui_surface = pygame.Surface((width, TOP_BAR_HEIGHT), pygame.SRCALPHA)
+        ui_surface.fill(UI_BG)
+        pygame.draw.rect(ui_surface, (255, 255, 255, 45), (0, 0, width, TOP_BAR_HEIGHT), border_radius=22)
+        screen.blit(ui_surface, (0, 0))
+
+        play_surface = pygame.Surface((play_w, play_h), pygame.SRCALPHA)
+        play_surface.fill(PLAY_BG)
+        pygame.draw.rect(play_surface, (255, 255, 255, 40), (0, 0, play_w, play_h), border_radius=24)
+        screen.blit(play_surface, (play_x, play_y))
+
         draw_grid(play_inner_x, play_inner_y, play_inner_w, play_inner_h)
-        # play area border on top of grid
         pygame.draw.rect(screen, PLAY_BORDER_COLOR, (play_x, play_y, play_w, play_h), BORDER_THICKNESS)
 
         # Food (circle + outline) - coordinates are top-left of block
