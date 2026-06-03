@@ -3,74 +3,374 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Snake Game Download</title>
+  <title>Snake Game</title>
   <style>
+    :root {
+      color-scheme: dark;
+      --bg-start: #060b18;
+      --bg-end: #1c3a55;
+      --card: rgba(255, 255, 255, 0.08);
+      --card-border: rgba(255, 255, 255, 0.12);
+      --accent: #6cffb8;
+      --accent-2: #22a8ff;
+      --text: #f3f7ff;
+      --muted: #b8c7d6;
+      --shadow: 0 30px 90px rgba(0, 0, 0, 0.35);
+    }
+
+    * {
+      box-sizing: border-box;
+    }
+
     body {
-      font-family: Arial, sans-serif;
-      background-color: #1a1a1a;
-      color: #fff;
+      margin: 0;
+      min-height: 100vh;
+      font-family: Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+      color: var(--text);
+      background: radial-gradient(circle at top left, rgba(108, 255, 194, 0.18), transparent 24%),
+                  radial-gradient(circle at bottom right, rgba(34, 168, 255, 0.16), transparent 22%),
+                  linear-gradient(135deg, var(--bg-start), var(--bg-end));
+      display: flex;
+      justify-content: center;
+      padding: 24px;
+    }
+
+    .page-shell {
+      width: min(1160px, 100%);
+      display: grid;
+      grid-template-columns: 1.2fr 0.9fr;
+      gap: 28px;
+      align-items: center;
+      padding: 28px;
+    }
+
+    .hero-card,
+    .preview-card {
+      background: var(--card);
+      border: 1px solid var(--card-border);
+      border-radius: 32px;
+      backdrop-filter: blur(24px);
+      box-shadow: var(--shadow);
+      padding: 36px;
+      overflow: hidden;
+    }
+
+    .hero-card {
       display: flex;
       flex-direction: column;
+      gap: 22px;
+    }
+
+    .eyebrow {
+      display: inline-flex;
+      align-items: center;
+      gap: 10px;
+      color: var(--accent);
+      font-weight: 700;
+      letter-spacing: 0.14em;
+      text-transform: uppercase;
+      font-size: 0.78rem;
+    }
+
+    .hero-title {
+      font-size: clamp(3rem, 4vw, 4.6rem);
+      line-height: 0.95;
+      margin: 0;
+      letter-spacing: -0.04em;
+    }
+
+    .hero-copy {
+      max-width: 560px;
+      font-size: 1.05rem;
+      line-height: 1.8;
+      color: var(--muted);
+    }
+
+    .button-row {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 18px;
+      align-items: center;
+    }
+
+    .download-btn {
+      position: relative;
+      display: inline-flex;
       align-items: center;
       justify-content: center;
-      min-height: 100vh;
-      margin: 0;
-      padding: 20px;
-      text-align: center;
-    }
-
-    h1 {
-      font-size: 2.5em;
-      margin-bottom: 20px;
-      color: #00ff00;
-    }
-
-    p {
-      font-size: 1.1em;
-      margin-bottom: 30px;
-      line-height: 1.5;
-      max-width: 500px;
-    }
-
-    a.download-btn {
-      display: inline-block;
-      padding: 15px 30px;
-      font-size: 1.2em;
-      font-weight: bold;
-      color: #fff;
-      background-color: #00ff00;
+      min-width: 240px;
+      padding: 18px 28px;
+      border-radius: 999px;
+      background: linear-gradient(135deg, rgba(108,255,194,0.95), rgba(34,168,255,0.95));
+      color: #04101d;
       text-decoration: none;
-      border-radius: 10px;
-      transition: background-color 0.3s;
+      font-weight: 700;
+      letter-spacing: 0.03em;
+      overflow: hidden;
+      transition: transform 0.3s ease, box-shadow 0.3s ease;
+      box-shadow: 0 18px 40px rgba(34, 168, 255, 0.28);
     }
 
-    a.download-btn:hover {
-      background-color: #00cc00;
+    .download-btn::before {
+      content: "";
+      position: absolute;
+      inset: 0;
+      background: radial-gradient(circle at top left, rgba(255,255,255,0.2), transparent 35%);
+      opacity: 0.9;
+      transition: opacity 0.4s ease;
     }
 
-    footer {
-      margin-top: 40px;
-      font-size: 0.9em;
-      color: #aaa;
+    .download-btn:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 26px 60px rgba(34, 168, 255, 0.35);
+    }
+
+    .download-btn span {
+      position: relative;
+      z-index: 1;
+    }
+
+    .download-btn:active {
+      transform: translateY(0);
+    }
+
+    .download-btn svg {
+      width: 20px;
+      height: 20px;
+      margin-left: 12px;
+      transition: transform 0.3s ease;
+    }
+
+    .download-btn:hover svg {
+      transform: translateX(6px);
+    }
+
+    .feature-list {
+      display: grid;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      gap: 16px;
+      margin-top: 16px;
+    }
+
+    .feature-item {
+      display: flex;
+      gap: 12px;
+      align-items: flex-start;
+      color: var(--text);
+      font-size: 0.98rem;
+      line-height: 1.7;
+    }
+
+    .feature-item::before {
+      content: "•";
+      color: var(--accent);
+      font-size: 1.4rem;
+      line-height: 1;
+      margin-top: 4px;
+    }
+
+    .preview-card {
+      display: grid;
+      gap: 20px;
+    }
+
+    .preview-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      gap: 12px;
+    }
+
+    .preview-title {
+      margin: 0;
+      font-size: 1.35rem;
+      font-weight: 700;
+    }
+
+    .preview-badge {
+      padding: 8px 14px;
+      border-radius: 999px;
+      background: rgba(108,255,194,0.14);
+      color: var(--accent);
+      font-size: 0.86rem;
+      font-weight: 700;
+    }
+
+    .preview-frame {
+      position: relative;
+      min-height: 380px;
+      border-radius: 28px;
+      overflow: hidden;
+      background: linear-gradient(180deg, rgba(255,255,255,0.06), rgba(255,255,255,0.03));
+      border: 1px solid rgba(255,255,255,0.12);
+      box-shadow: inset 0 0 0 1px rgba(255,255,255,0.03), inset 0 0 40px rgba(255,255,255,0.05);
+    }
+
+    .preview-screen {
+      position: absolute;
+      inset: 20px;
+      border-radius: 22px;
+      background: linear-gradient(155deg, rgba(5,20,45,0.95), rgba(8,30,72,0.95));
+      overflow: hidden;
+      display: grid;
+      place-items: center;
+      padding: 24px;
+    }
+
+    .preview-grid {
+      width: 100%;
+      height: 100%;
+      display: grid;
+      grid-template-columns: repeat(12, 1fr);
+      gap: 14px;
+    }
+
+    .preview-block {
+      background: rgba(255,255,255,0.1);
+      border-radius: 16px;
+      backdrop-filter: blur(8px);
+      border: 1px solid rgba(255,255,255,0.08);
+    }
+
+    .preview-block:nth-child(1) { grid-column: 1 / span 12; grid-row: 1 / span 6; }
+    .preview-block:nth-child(2) { grid-column: 1 / span 6; grid-row: 7 / span 3; }
+    .preview-block:nth-child(3) { grid-column: 7 / span 6; grid-row: 7 / span 3; }
+    .preview-block:nth-child(4) { grid-column: 1 / span 12; grid-row: 10 / span 3; }
+
+    .preview-block h3 {
+      margin: 0;
+      padding: 18px;
+      font-size: 1rem;
+      color: var(--text);
+    }
+
+    .preview-block p {
+      margin: 0;
+      padding: 0 18px 18px;
+      color: var(--muted);
+      font-size: 0.94rem;
+      line-height: 1.6;
+    }
+
+    .preview-grid::after {
+      content: "";
+      position: absolute;
+      inset: 0;
+      background: radial-gradient(circle at top, rgba(108,255,194,0.16), transparent 20%),
+                  radial-gradient(circle at bottom right, rgba(34,168,255,0.16), transparent 24%);
+      pointer-events: none;
+    }
+
+    .detail-list {
+      display: grid;
+      gap: 14px;
+      padding-top: 10px;
+      color: var(--text);
+    }
+
+    .detail-item {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      padding: 14px 18px;
+      border-radius: 18px;
+      background: rgba(255,255,255,0.05);
+      border: 1px solid rgba(255,255,255,0.08);
+      font-size: 0.95rem;
+    }
+
+    .detail-item span {
+      width: 10px;
+      height: 10px;
+      border-radius: 999px;
+      background: linear-gradient(135deg, var(--accent), var(--accent-2));
+      flex-shrink: 0;
+    }
+
+    @media (max-width: 900px) {
+      .page-shell {
+        grid-template-columns: 1fr;
+      }
+
+      .hero-card,
+      .preview-card {
+        padding: 28px;
+      }
+
+      .feature-list {
+        grid-template-columns: 1fr;
+      }
+    }
+
+    @media (max-width: 620px) {
+      body {
+        padding: 16px;
+      }
+
+      .hero-card,
+      .preview-card {
+        padding: 22px;
+      }
+
+      .download-btn {
+        width: 100%;
+      }
+
+      .preview-frame {
+        min-height: 320px;
+      }
     }
   </style>
 </head>
 <body>
-  <h1>Snake Game</h1>
-  <p>
-    Welcome! You can download the Python Snake game below and play it on your computer. 
-  </p>
+  <main class="page-shell">
+    <section class="hero-card">
+      <div class="eyebrow">Snake Game</div>
+      <h1 class="hero-title">Play the sleek Python Snake adventure with one click.</h1>
+      <p class="hero-copy">Download the latest Windows build, enjoy responsive controls, and keep your high score with a polished glass-style interface. Perfect for quick fun and smooth gameplay.</p>
+      <div class="button-row">
+        <a href="dist/snake_game.exe" class="download-btn" download><span>Download Now</span>
+          <svg viewBox="0 0 24 24" fill="none" aria-hidden="true">
+            <path d="M5 12h14" stroke="#04101d" stroke-width="2" stroke-linecap="round"/>
+            <path d="M13 6l6 6-6 6" stroke="#04101d" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+          </svg>
+        </a>
+      </div>
+    </section>
 
-  <!-- Download buttons -->
-  <a href="dist/snake_game.exe" class="download-btn" download>Download Snake Game (.exe)</a>
-  <br><br>
-  <!-- Optional: executable version for Windows -->
-  <!-- <a href="snake_game.exe" class="download-btn" download>Download Snake Game (.exe)</a> -->
-
-  <footer>
-    &copy; 2026 David Yusuf Lcu/ug/2434288. All rights reserved.
-  </footer>
+    <section class="preview-card">
+      <div class="preview-header">
+        <h2 class="preview-title">Game Preview</h2>
+        <span class="preview-badge">Live Demo</span>
+      </div>
+      <div class="preview-frame">
+        <div class="preview-screen">
+          <div class="preview-grid">
+            <div class="preview-block">
+              <h3>Play field</h3>
+              <p>Clean snake arena with soft neon borders and smooth grid shading.</p>
+            </div>
+            <div class="preview-block">
+              <h3>Score UI</h3>
+              <p>Highscore and current score shown clearly in the top status bar.</p>
+            </div>
+            <div class="preview-block">
+              <h3>Animated button</h3>
+              <p>The download button pulses and slides for a modern interactive feel.</p>
+            </div>
+            <div class="preview-block">
+              <h3>Responsive design</h3>
+              <p>Looks great on both large screens and compact mobile layouts.</p>
+            </div>
+          </div>
+        </div>
+      </div>
+      <div class="detail-list">
+        <div class="detail-item"><span></span>One-click Windows executable download</div>
+        <div class="detail-item"><span></span>Pygame-powered gameplay with sound effects</div>
+        <div class="detail-item"><span></span>Easy install and fast startup</div>
+      </div>
+    </section>
+  </main>
 </body>
 </html>
-
-
