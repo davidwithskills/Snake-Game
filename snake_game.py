@@ -1,10 +1,19 @@
+import os
+import sys
 import pygame
 import random
 
 pygame.init()
 pygame.mixer.init()
-eat_sound = pygame.mixer.Sound("eat.wav")
-gameover_sound = pygame.mixer.Sound("gameover.wav")
+
+def resource_path(relative_path):
+    base_path = getattr(sys, '_MEIPASS', None)
+    if base_path is None:
+        base_path = os.path.abspath(os.path.dirname(__file__))
+    return os.path.join(base_path, relative_path)
+
+eat_sound = pygame.mixer.Sound(resource_path("eat.wav"))
+gameover_sound = pygame.mixer.Sound(resource_path("gameover.wav"))
 
 # Optional: volume control (0.0 to 1.0)
 eat_sound.set_volume(0.6)
@@ -263,7 +272,7 @@ def gameLoop():
         clock.tick(speed)
 
     pygame.quit()
-    quit()
+    sys.exit()
 
 def generate_food(snake, play_inner_x, play_inner_y, play_inner_w, play_inner_h):
     free_cells = []
