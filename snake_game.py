@@ -30,20 +30,15 @@ ACCENT = (108, 255, 194)
 ACCENT_2 = (34, 168, 255)
 BG_START = (6, 11, 24)
 BG_END = (28, 58, 85)
-UI_BG = (255, 255, 255, 28)
+TOP_BAR_BG = (255, 255, 255, 28)
 PLAY_BG = (255, 255, 255, 18)
-PLAY_BORDER_COLOR = (108, 255, 194)
+PLAY_BORDER_COLOR = ACCENT
 GRID_SHADE_A = (13, 31, 61)
 GRID_SHADE_B = (8, 22, 42)
 
 # Layout
 TOP_BAR_HEIGHT = 60
 UI_MARGIN = 10
-UI_BG = (34, 139, 34)  # top bar background
-PLAY_BG = (187, 240, 148)  # play area background
-PLAY_BORDER_COLOR = (34, 139, 34)
-GRID_SHADE_A = (180, 230, 140)
-GRID_SHADE_B = (165, 215, 120)
 BORDER_THICKNESS = 5
 
 # Screen size
@@ -257,7 +252,7 @@ def gameLoop():
         draw_background()
 
         ui_surface = pygame.Surface((width, TOP_BAR_HEIGHT), pygame.SRCALPHA)
-        ui_surface.fill(UI_BG)
+        ui_surface.fill(TOP_BAR_BG)
         pygame.draw.rect(ui_surface, (255, 255, 255, 45), (0, 0, width, TOP_BAR_HEIGHT), border_radius=22)
         screen.blit(ui_surface, (0, 0))
 
